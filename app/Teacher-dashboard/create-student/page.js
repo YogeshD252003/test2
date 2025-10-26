@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import { useRouter, useParams } from "next/navigation";
 import { auth, db } from "../../../lib/firebaseConfig";
 import { createUserWithEmailAndPassword } from "firebase/auth";
 import { doc, setDoc } from "firebase/firestore";
@@ -9,7 +10,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ArrowLeft, UserPlus } from "lucide-react";
-import Link from "next/link";
 
 // Predefined Departments
 const allDepartments = [
@@ -18,6 +18,9 @@ const allDepartments = [
 ];
 
 export default function CreateStudentPage() {
+  const router = useRouter();
+  const { uid } = useParams();
+
   const [formData, setFormData] = useState({
     name: "",
     usn: "",
@@ -54,6 +57,7 @@ export default function CreateStudentPage() {
       await setDoc(doc(db, "students", user.uid), {
         ...formData,
         uid: user.uid,
+        teacherId: uid,
         createdAt: new Date().toISOString()
       });
 
@@ -72,18 +76,22 @@ export default function CreateStudentPage() {
 
   return (
     <div className="min-h-screen py-10 px-6">
+      {/* Header */}
       <div className="max-w-4xl mx-auto mb-10 flex items-center justify-between">
         <div>
           <h1 className="text-4xl font-bold mb-2">Create Student</h1>
           <p className="text-gray-600">Fill in the student details below.</p>
         </div>
-        <Link href="/Teacher-dashboard">
-          <Button variant="outline" className="flex items-center gap-2 border-blue-600 text-blue-600 hover:bg-blue-600 hover:text-white">
-            <ArrowLeft className="w-4 h-4" /> Back to Dashboard
-          </Button>
-        </Link>
+        <Button
+          variant="outline"
+          className="flex items-center gap-2 border-blue-600 text-blue-600 hover:bg-blue-600 hover:text-white"
+          onClick={() => router.push(`/Teacher-dashboard/${uid}`)}
+        >
+          <ArrowLeft className="w-4 h-4" /> Back to Dashboard
+        </Button>
       </div>
 
+      {/* Form Card */}
       <Card className="max-w-4xl mx-auto bg-white/80 p-6 rounded-2xl shadow-lg">
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-2xl font-bold">
