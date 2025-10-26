@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { auth, db } from "../../firebaseConfig";
+import { auth, db } from "../../../lib/firebaseConfig";
 import { createUserWithEmailAndPassword } from "firebase/auth";
 import { doc, setDoc } from "firebase/firestore";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";

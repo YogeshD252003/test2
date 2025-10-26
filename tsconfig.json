@@ -32,7 +32,7 @@
     ".next/types/**/*.ts",
     "**/*.ts",
     "**/*.tsx"
-, "app/components/ui/progress.js", "app/student-login/page.js", "app/teacher-login/page.js"  ],
+, "app/components/ui/progress.js", "app/student-login/page.js", "app/teacher-login/page.js", "app/components/ui/button.js", "app/components/ui/card.js"  ],
   "exclude": [
     "node_modules"
 , "components/teacher/TeacherLayout.js", "app/CreateSession/page.js"  ]

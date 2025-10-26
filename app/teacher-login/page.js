@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
-import { auth, db } from "@/app/firebaseConfig";
+import { auth, db } from "@/lib/firebaseConfig";
 import { signInWithEmailAndPassword } from "firebase/auth";
 import { doc, getDoc } from "firebase/firestore";
 import { Eye, EyeOff, ArrowLeft, Lock, User } from "lucide-react";

@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { db } from "../../firebaseConfig";
+import { db } from "../../../lib/firebaseConfig";
 import { collection, onSnapshot, orderBy, query } from "firebase/firestore";
 import { motion, AnimatePresence } from "framer-motion";
 

@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import QRCode from "qrcode";
-import { db } from "@/app/firebaseConfig";
+import { db } from "@/lib/firebaseConfig";
 import {
   collection,
   addDoc,
