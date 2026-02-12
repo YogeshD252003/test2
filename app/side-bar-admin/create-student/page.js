@@ -1,138 +1,140 @@
 "use client";
 
 import React, { useState } from "react";
-import { auth, db } from "../../../lib/firebaseConfig";
-import { createUserWithEmailAndPassword } from "firebase/auth";
-import { doc, setDoc } from "firebase/firestore";
+
+import { collection, addDoc, updateDoc, doc, serverTimestamp } from "firebase/firestore";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { ArrowLeft, UserPlus } from "lucide-react";
+import { db } from "@/lib/firebaseConfig";
+
+import { ArrowLeft, Fingerprint } from "lucide-react";
 import Link from "next/link";
 
-const allDepartments = [
-  "CSE","ECE","ME","CE","EEE","IT","ISE","AIML","ET",
-  "AI & DS","Cybersecurity","Biotechnology","Automobile","Aerospace","Biomedical","Mechatronics","Chemical"
-];
-
 export default function CreateStudentPage() {
-  const [formData, setFormData] = useState({
-    name: "", usn: "", email: "", password: "",
-    department: "", semester: "", section: "", phone: ""
+  const [form, setForm] = useState({
+    name: "",
+    usn: "",
+    email: "",
+    phone: "",
+    password: "",
+    department: "",
+    section: "",
+    semester: "",
   });
   const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState("");
+  const [fingerRegistered, setFingerRegistered] = useState(false);
+  const [createdStudentId, setCreatedStudentId] = useState(null);
 
   const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+    setForm({ ...form, [e.target.name]: e.target.value });
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
-    setMessage("");
-
     try {
-      // 1️⃣ Create student in Firebase Auth
-      const userCredential = await createUserWithEmailAndPassword(
-        auth,
-        formData.email,
-        formData.password
-      );
-      const uid = userCredential.user.uid;
-
-      // 2️⃣ Save student data in Firestore using UID as doc id
-      await setDoc(doc(db, "students", uid), {
-        ...formData,
-        createdAt: new Date().toISOString(),
-        uid
+      const docRef = await addDoc(collection(db, "students"), {
+        ...form,
+        createdAt: serverTimestamp(),
       });
-
-      setMessage("✅ Student created successfully in Auth & Database!");
-      setFormData({
-        name: "", usn: "", email: "", password: "",
-        department: "", semester: "", section: "", phone: ""
-      });
-    } catch (err) {
-      console.error(err);
-      setMessage("❌ Failed to create student: " + err.message);
+      setCreatedStudentId(docRef.id);
+      alert("✅ Student created successfully!");
+    } catch (error) {
+      console.error("Error adding student:", error);
+      alert("Error adding student");
     } finally {
       setLoading(false);
     }
   };
 
-  return (
-    <div className="min-h-screen py-10 px-6 bg-slate-50">
-      <div className="max-w-4xl mx-auto mb-10 flex items-center justify-between">
-        <div>
-          <h1 className="text-4xl font-bold mb-2">Create Student</h1>
-          <p className="text-gray-600">Fill in the student details below.</p>
-        </div>
-        <Link href="/Teacher-dashboard">
-          <Button variant="outline" className="flex items-center gap-2 border-blue-600 text-blue-600 hover:bg-blue-600 hover:text-white">
-            <ArrowLeft className="w-4 h-4" /> Back
-          </Button>
-        </Link>
-      </div>
+  const handleFingerprintRegister = async () => {
+    if (!createdStudentId) {
+      alert("Please create the student first before adding fingerprint.");
+      return;
+    }
 
-      <Card className="max-w-4xl mx-auto bg-white/80 p-6 rounded-2xl shadow-lg">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-2xl font-bold">
-            <UserPlus className="w-6 h-6 text-blue-600" />
-            Student Registration
-          </CardTitle>
+    try {
+      const publicKey = {
+        challenge: new Uint8Array(32),
+        rp: { name: "EduTrack" },
+        user: {
+          id: new TextEncoder().encode(createdStudentId),
+          name: form.email,
+          displayName: form.name,
+        },
+        pubKeyCredParams: [{ type: "public-key", alg: -7 }],
+        authenticatorSelection: {
+          authenticatorAttachment: "platform",
+          userVerification: "preferred",
+        },
+        timeout: 60000,
+      };
+
+      const credential = await navigator.credentials.create({ publicKey });
+
+      const credentialData = {
+        id: credential.id,
+        type: credential.type,
+        transports: credential.response.getTransports
+          ? credential.response.getTransports()
+          : [],
+      };
+
+      await updateDoc(doc(db, "students", createdStudentId), {
+        fingerprintData: credentialData,
+      });
+
+      setFingerRegistered(true);
+      alert("✅ Fingerprint registered successfully!");
+    } catch (err) {
+      console.error("Fingerprint registration failed:", err);
+      alert("❌ Fingerprint registration failed. Please try again.");
+    }
+  };
+
+  return (
+    <div className="max-w-lg mx-auto p-6">
+      <Card>
+        <CardHeader className="flex justify-between items-center">
+          <CardTitle className="text-xl font-bold">Create Student</CardTitle>
+          <Link href="/teacher/dashboard" className="text-sm text-blue-500 flex items-center gap-1">
+            <ArrowLeft size={16} /> Back
+          </Link>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleSubmit} className="grid gap-6 sm:grid-cols-2">
-            <div>
-              <Label htmlFor="name">Full Name</Label>
-              <Input id="name" name="name" value={formData.name} onChange={handleChange} required />
-            </div>
-            <div>
-              <Label htmlFor="usn">USN</Label>
-              <Input id="usn" name="usn" value={formData.usn} onChange={handleChange} required />
-            </div>
-            <div>
-              <Label htmlFor="email">Email</Label>
-              <Input id="email" name="email" type="email" value={formData.email} onChange={handleChange} required />
-            </div>
-            <div>
-              <Label htmlFor="password">Password</Label>
-              <Input id="password" name="password" type="password" value={formData.password} onChange={handleChange} required />
-            </div>
-            <div>
-              <Label htmlFor="department">Department</Label>
-              <select id="department" name="department" value={formData.department} onChange={handleChange} required className="w-full rounded-md border py-2 px-3">
-                <option value="">Select Department</option>
-                {allDepartments.map(d => <option key={d} value={d}>{d}</option>)}
-              </select>
-            </div>
-            <div>
-              <Label htmlFor="semester">Semester</Label>
-              <select id="semester" name="semester" value={formData.semester} onChange={handleChange} required className="w-full rounded-md border py-2 px-3">
-                <option value="">Select Semester</option>
-                {[1,2,3,4,5,6,7,8].map(s => <option key={s} value={s}>{s}</option>)}
-              </select>
-            </div>
-            <div>
-              <Label htmlFor="section">Section</Label>
-              <Input id="section" name="section" placeholder="A/B/C/D" value={formData.section} onChange={handleChange} required />
-            </div>
-            <div>
-              <Label htmlFor="phone">Phone</Label>
-              <Input id="phone" name="phone" type="tel" value={formData.phone} onChange={handleChange} required />
-            </div>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            {["name", "usn", "email", "phone", "password", "department", "section", "semester"].map((field) => (
+              <div key={field}>
+                <Label className="capitalize">{field}</Label>
+                <Input
+                  name={field}
+                  type={field === "password" ? "password" : "text"}
+                  value={form[field]}
+                  onChange={handleChange}
+                  required
+                />
+              </div>
+            ))}
 
-            <div className="sm:col-span-2">
-              <Button type="submit" disabled={loading} className="w-full bg-blue-600 text-white py-4 rounded-xl">
-                {loading ? "Creating..." : "Create Student"}
-              </Button>
-            </div>
+            <Button type="submit" className="w-full" disabled={loading}>
+              {loading ? "Creating..." : "Create Student"}
+            </Button>
           </form>
 
-          {message && <p className="mt-4 text-center">{message}</p>}
+          {createdStudentId && (
+            <div className="mt-6 text-center">
+              <Button
+                onClick={handleFingerprintRegister}
+                variant={fingerRegistered ? "secondary" : "default"}
+                className="flex items-center gap-2 mx-auto"
+              >
+                <Fingerprint size={18} />
+                {fingerRegistered ? "Fingerprint Registered ✅" : "Register Fingerprint"}
+              </Button>
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>
